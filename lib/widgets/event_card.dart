@@ -26,7 +26,7 @@ class EventCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${DateFormat('MMM d').format(event.date)}${event.time != null ? ' • ${event.time}' : ''}',
+          '${DateFormat('MMM d').format(event.date)}${event.time != null ? ' • ${Event.formatStoredTime(context, event.time) ?? event.time}' : ''}',
         ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -55,11 +55,13 @@ class DashboardScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               _buildTodayCard(context, now),
               const SizedBox(height: 16),
+              _buildNotificationDebugCard(context, ref),
+              const SizedBox(height: 16),
               _buildStatsRow(upcomingEvents.length, soonBirthdays),
               const SizedBox(height: 24),
               _buildSectionLabel('This week'),
               const SizedBox(height: 10),
-              _buildEventsSection(context, upcomingEvents, now),
+      _buildEventsSection(context, upcomingEvents, now),
               const SizedBox(height: 24),
               _buildDivider(),
               const SizedBox(height: 20),
@@ -195,6 +197,122 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildNotificationDebugCard(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: _surfaceBg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _borderDim, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'NOTIFICATION CHECK',
+            style: GoogleFonts.dmSans(
+              fontSize: 10,
+              letterSpacing: 1.4,
+              color: _textMuted,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Use this to test whether notifications display at all and whether scheduled reminders fire.',
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              color: _textWarm,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _buildDebugButton(
+                label: 'Show Now',
+                onTap: () async {
+                  try {
+                    await ref
+                        .read(notificationServiceProvider)
+                        .showTestNotification();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Test notification sent immediately.'),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Immediate test failed: $e'),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+              _buildDebugButton(
+                label: 'Schedule 5s',
+                onTap: () async {
+                  try {
+                    await ref
+                        .read(notificationServiceProvider)
+                        .scheduleTestNotification();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Scheduled test notification for 5 seconds from now.',
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Scheduled test failed: $e'),
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDebugButton({
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: _borderDim, width: 0.5),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: GoogleFonts.dmSans(
+            fontSize: 11,
+            letterSpacing: 0.9,
+            color: _gold,
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Stats Row ──────────────────────────────────────────────────────────────
 
   Widget _buildStatsRow(int eventCount, int bdayCount) {
@@ -271,13 +389,13 @@ class DashboardScreen extends ConsumerWidget {
       children: events
           .map((e) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: _buildEventCard(e, now),
+        child: _buildEventCard(context, e, now),
       ))
           .toList(),
     );
   }
 
-  Widget _buildEventCard(Event event, DateTime now) {
+  Widget _buildEventCard(BuildContext context, Event event, DateTime now) {
     final today = DateTime(now.year, now.month, now.day);
     final eventDay = DateTime(event.date.year, event.date.month, event.date.day);
     final diff = eventDay.difference(today).inDays;
@@ -322,7 +440,7 @@ class DashboardScreen extends ConsumerWidget {
                 if (event.time != null) ...[
                   const SizedBox(height: 1),
                   Text(
-                    event.time!,
+                    Event.formatStoredTime(context, event.time) ?? event.time!,
                     style: GoogleFonts.dmSans(fontSize: 11, color: _textMuted),
                   ),
                 ],

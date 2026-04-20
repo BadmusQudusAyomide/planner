@@ -38,23 +38,7 @@ class _AddEventScreenState extends ConsumerState<AddEventScreen> {
     _titleController = TextEditingController(text: widget.event?.title ?? '');
     _date = widget.event?.date ?? widget.selectedDate;
     _tag = widget.event?.tag ?? 'Personal';
-
-    if (widget.event?.time != null) {
-      try {
-        final parts = widget.event!.time!.split(' ');
-        final timeParts = parts[0].split(':');
-        int hour = int.parse(timeParts[0]);
-        int minute = int.parse(timeParts[1]);
-        if (parts.length > 1 && parts[1].toUpperCase() == 'PM' && hour < 12) {
-          hour += 12;
-        } else if (parts.length > 1 && parts[1].toUpperCase() == 'AM' && hour == 12) {
-          hour = 0;
-        }
-        _time = TimeOfDay(hour: hour, minute: minute);
-      } catch (_) {
-        _time = null;
-      }
-    }
+    _time = Event.parseStoredTime(widget.event?.time);
   }
 
   @override
@@ -374,7 +358,7 @@ class _AddEventScreenState extends ConsumerState<AddEventScreen> {
               id: widget.event!.id,
               title: _titleController.text.trim(),
               date: _date,
-              time: _time?.format(context),
+              time: Event.serializeTimeOfDay(_time),
               tag: _tag,
             );
             await ref.read(eventListProvider.notifier).updateEvent(updatedEvent);
@@ -382,7 +366,7 @@ class _AddEventScreenState extends ConsumerState<AddEventScreen> {
             final event = Event.create(
               title: _titleController.text.trim(),
               date: _date,
-              time: _time?.format(context),
+              time: Event.serializeTimeOfDay(_time),
               tag: _tag,
             );
             await ref.read(eventListProvider.notifier).addEvent(event);

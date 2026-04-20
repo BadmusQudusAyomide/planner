@@ -382,7 +382,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                 if (event.time != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    event.time!,
+                    Event.formatStoredTime(context, event.time) ?? event.time!,
                     style: GoogleFonts.dmSans(
                         fontSize: 11, color: _textMuted),
                   ),

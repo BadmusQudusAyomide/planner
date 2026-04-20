@@ -57,13 +57,6 @@ class NotificationService {
       debugPrintStack(stackTrace: st);
     }
 
-    try {
-      await androidImplementation?.requestExactAlarmsPermission();
-    } catch (e, st) {
-      debugPrint('Failed to request exact alarm permission: $e');
-      debugPrintStack(stackTrace: st);
-    }
-
     _isInitialized = true;
   }
 
@@ -75,7 +68,7 @@ class NotificationService {
     await init();
     await cancelNotification(event.id);
 
-    final parsedTime = _parseTime(event.time);
+    final parsedTime = Event.parseStoredTime(event.time);
     final scheduledDateTime = DateTime(
       event.date.year,
       event.date.month,
@@ -137,7 +130,6 @@ class NotificationService {
     }
 
     final scheduledDate = _toTzDateTime(nextBirthday);
-
     await _notifications.zonedSchedule(
       birthday.id.hashCode,
       'Birthday Reminder',
@@ -177,43 +169,64 @@ class NotificationService {
     await _notifications.cancelAll();
   }
 
-  TZDateTimeParts? _parseTime(String? rawTime) {
-    if (rawTime == null || rawTime.trim().isEmpty) {
-      return null;
+  Future<void> showTestNotification() async {
+    if (kIsWeb) {
+      return;
     }
 
-    try {
-      final parts = rawTime.trim().split(' ');
-      final timeParts = parts.first.split(':');
-      var hour = int.parse(timeParts[0]);
-      final minute = int.parse(timeParts[1]);
+    await init();
 
-      if (parts.length > 1) {
-        final meridiem = parts[1].toUpperCase();
-        if (meridiem == 'PM' && hour < 12) {
-          hour += 12;
-        } else if (meridiem == 'AM' && hour == 12) {
-          hour = 0;
-        }
-      }
+    await _notifications.show(
+      999001,
+      'Planner Test',
+      'If you can see this, local notifications are working.',
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'test_channel',
+          'Test Notifications',
+          channelDescription: 'Temporary test notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+    );
+  }
 
-      return TZDateTimeParts(hour: hour, minute: minute);
-    } catch (_) {
-      return null;
+  Future<void> scheduleTestNotification({
+    Duration delay = const Duration(seconds: 5),
+  }) async {
+    if (kIsWeb) {
+      return;
     }
+
+    await init();
+
+    final scheduledDate = _toTzDateTime(DateTime.now().add(delay));
+
+    await _notifications.zonedSchedule(
+      999002,
+      'Planner Scheduled Test',
+      'This reminder was scheduled a few seconds ago.',
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'test_channel',
+          'Test Notifications',
+          channelDescription: 'Temporary test notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+        ),
+        iOS: DarwinNotificationDetails(),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
   }
 
   tz.TZDateTime _toTzDateTime(DateTime dateTime) {
     return tz.TZDateTime.from(dateTime, tz.local);
   }
-}
 
-class TZDateTimeParts {
-  const TZDateTimeParts({
-    required this.hour,
-    required this.minute,
-  });
-
-  final int hour;
-  final int minute;
 }
