@@ -42,4 +42,19 @@ class Event extends HiveObject {
       tag: tag,
     );
   }
+
+  Event copyWith({
+    String? title,
+    DateTime? date,
+    String? time,
+    String? tag,
+  }) {
+    return Event(
+      id: id,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      tag: tag ?? this.tag,
+    );
+  }
 }

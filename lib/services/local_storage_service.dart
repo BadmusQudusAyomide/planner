@@ -7,14 +7,13 @@ class LocalStorageService {
   static const String birthdayBoxName = 'birthdays';
 
   Future<void> init() async {
-    await Hive.initFlutter();
-    
-    // Adapters will be registered in main.dart or here
-    // Hive.registerAdapter(EventAdapter());
-    // Hive.registerAdapter(BirthdayAdapter());
+    if (!Hive.isBoxOpen(eventBoxName)) {
+      await Hive.openBox<Event>(eventBoxName);
+    }
 
-    await Hive.openBox<Event>(eventBoxName);
-    await Hive.openBox<Birthday>(birthdayBoxName);
+    if (!Hive.isBoxOpen(birthdayBoxName)) {
+      await Hive.openBox<Birthday>(birthdayBoxName);
+    }
   }
 
   Box<Event> getEventBox() => Hive.box<Event>(eventBoxName);

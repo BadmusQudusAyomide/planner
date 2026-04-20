@@ -1,17 +1,21 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
 import '../models/birthday.dart';
 import '../services/local_storage_service.dart';
+import '../services/notification_service.dart';
 import 'event_provider.dart';
 
 final birthdayListProvider = StateNotifierProvider<BirthdayListNotifier, List<Birthday>>((ref) {
   final service = ref.watch(localStorageServiceProvider);
-  return BirthdayListNotifier(service);
+  final notifications = ref.watch(notificationServiceProvider);
+  return BirthdayListNotifier(service, notifications);
 });
 
 class BirthdayListNotifier extends StateNotifier<List<Birthday>> {
   final LocalStorageService _service;
+  final NotificationService _notifications;
 
-  BirthdayListNotifier(this._service) : super([]) {
+  BirthdayListNotifier(this._service, this._notifications) : super([]) {
     _loadBirthdays();
   }
 
@@ -21,11 +25,36 @@ class BirthdayListNotifier extends StateNotifier<List<Birthday>> {
 
   Future<void> addBirthday(Birthday birthday) async {
     await _service.saveBirthday(birthday);
+    try {
+      await _notifications.scheduleBirthdayNotification(birthday);
+    } catch (e, st) {
+      debugPrint('Failed to schedule birthday notification: $e');
+      debugPrintStack(stackTrace: st);
+    }
+    _loadBirthdays();
+  }
+
+  Future<void> updateBirthday(Birthday birthday) async {
+    await _service.saveBirthday(birthday); // Hive handles updates
+    try {
+      await _notifications.scheduleBirthdayNotification(
+        birthday,
+      ); // reschedule
+    } catch (e, st) {
+      debugPrint('Failed to update birthday notification: $e');
+      debugPrintStack(stackTrace: st);
+    }
     _loadBirthdays();
   }
 
   Future<void> deleteBirthday(String id) async {
     await _service.deleteBirthday(id);
+    try {
+      await _notifications.cancelNotification(id);
+    } catch (e, st) {
+      debugPrint('Failed to cancel birthday notification: $e');
+      debugPrintStack(stackTrace: st);
+    }
     _loadBirthdays();
   }
 
