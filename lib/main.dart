@@ -30,15 +30,6 @@ void main() async {
 
     await localStorageService.init();
     await notificationService.init();
-    await notificationService.cancelAllNotifications();
-
-    for (final event in localStorageService.getAllEvents()) {
-      await notificationService.scheduleEventNotification(event);
-    }
-
-    for (final birthday in localStorageService.getAllBirthdays()) {
-      await notificationService.scheduleBirthdayNotification(birthday);
-    }
   } catch (e) {
     debugPrint("Initialization error: $e");
   }
